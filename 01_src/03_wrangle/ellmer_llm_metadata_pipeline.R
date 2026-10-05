@@ -19,7 +19,7 @@ model_name <- "gemma4"
 max_retries <- 3
 base_url <- Sys.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 output_file <- here::here("02_data_output", "dig_req_llm_metadata_2.rds")
-n_requests <- 4 # number of requests to process while testing; use Inf for all
+n_requests <- Inf # number of requests to process while testing; use Inf for all
 
 # Output schema, enforced by Ollama via structured output (so no JSON parsing is needed).
 # Field guidance lives in the prompt file.

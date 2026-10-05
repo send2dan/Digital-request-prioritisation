@@ -208,51 +208,51 @@ theme_counts |>
 ```
 
 
-# Potentially related requests
+<!-- # Potentially related requests -->
 
-Requests that share multiple themes may represent:
+<!-- Requests that share multiple themes may represent: -->
 
-* similar problems
-* opportunities for collaboration
-* duplicate requests
-* opportunities to consolidate work
+<!-- * similar problems -->
+<!-- * opportunities for collaboration -->
+<!-- * duplicate requests -->
+<!-- * opportunities to consolidate work -->
 
-```{r}
-pairs <- inner_join(
-  themes,
-  themes,
-  by = "themes",
-  relationship = "many-to-many"
-) |>
-  filter(
-    digital_request_number.x < digital_request_number.y
-  ) |>
-  group_by(
-    digital_request_number.x,
-    digital_request_number.y
-  ) |>
-  summarise(
-    shared_themes = paste(
-      sort(unique(themes)),
-      collapse = "; "
-    ),
-    n_shared_themes = n(),
-    .groups = "drop"
-  ) |>
-  filter(n_shared_themes >= 2) |>
-  arrange(
-    desc(n_shared_themes),
-    digital_request_number.x,
-    digital_request_number.y
-  )
+<!-- ```{r} -->
+<!-- pairs <- inner_join( -->
+<!--   themes, -->
+<!--   themes, -->
+<!--   by = "themes", -->
+<!--   relationship = "many-to-many" -->
+<!-- ) |> -->
+<!--   filter( -->
+<!--     digital_request_number.x < digital_request_number.y -->
+<!--   ) |> -->
+<!--   group_by( -->
+<!--     digital_request_number.x, -->
+<!--     digital_request_number.y -->
+<!--   ) |> -->
+<!--   summarise( -->
+<!--     shared_themes = paste( -->
+<!--       sort(unique(themes)), -->
+<!--       collapse = "; " -->
+<!--     ), -->
+<!--     n_shared_themes = n(), -->
+<!--     .groups = "drop" -->
+<!--   ) |> -->
+<!--   filter(n_shared_themes >= 2) |> -->
+<!--   arrange( -->
+<!--     desc(n_shared_themes), -->
+<!--     digital_request_number.x, -->
+<!--     digital_request_number.y -->
+<!--   ) -->
 
-pairs |>
-    interactive_table(nrow = 5, 
-                                      not_as_factor = c("mrn", 
-                                                        "patient"
-                                                        ),
-                                ) 
-```
+<!-- pairs |> -->
+<!--     interactive_table(nrow = 5,  -->
+<!--                                       not_as_factor = c("mrn",  -->
+<!--                                                         "patient" -->
+<!--                                                         ), -->
+<!--                                 )  -->
+<!-- ``` -->
 
 # Request summaries
 
