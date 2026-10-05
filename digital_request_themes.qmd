@@ -54,21 +54,27 @@ themes <- flat |>
   unnest(themes) |>
   distinct(digital_request_number, themes, .keep_all = TRUE)
 
-# Standardise capitalisation
-themes_clean <- themes |>
-  mutate(
-    themes = str_squish(themes),
-    themes = str_to_title(themes)
-  )
+theme_counts <- themes |>
+  count(themes, sort = TRUE) |>
+  filter(n >= 2)
+
+top_theme <- theme_counts |>
+  dplyr::slice_head(n = 1) |>
+  dplyr::pull(themes)
 
 # create flat metadata table for later use in report
 flat_metadata <- res |>
-    select(
-        request_row_id,
-        digital_request_number,
-        metadata_v3
-    ) |>
-    unnest_wider(metadata_v3)
+  select(
+    request_row_id,
+    digital_request_number,
+    source_record,
+    metadata_v3
+  ) |>
+  unnest_wider(
+    source_record,
+    names_sep = "_"
+  ) |>
+  unnest_wider(metadata_v3)
 
 # Flextable ---------------
 
@@ -125,6 +131,15 @@ interactive_table <- function(table,
 
 ```
 
+# Executive summary
+
+`r nrow(flat_metadata)` requests were analysed across
+`r n_distinct(flat_metadata$business_area)` business areas.
+
+The most common theme was **`r top_theme`**.
+
+The sections below summarise request themes, business areas, complexity indicators and opportunities to identify related requests.
+
 # Overview
 
 This report summarises themes identified from digital requests using locally-hosted LLM-generated metadata.
@@ -158,17 +173,36 @@ summary_tbl |>
 
 # Most common themes
 
+## Top 20 themes
+
+```{r}
+theme_counts |>
+  slice_head(n = 20) |>
+  ggplot(
+    aes(
+      x = reorder(themes, n),
+      y = n
+    )
+  ) +
+  geom_col() +
+  coord_flip() +
+  labs(
+    x = "Themes",
+    y = "Requests (n)"
+  ) +
+  geom_text(
+    aes(label = n),
+    hjust = -0.2
+  ) +
+  theme_minimal()
+```
+
 ## Word cloud
 
 ```{r}
 #| out-width: 100%
 #| fig-width: 16
 #| fig-height: 12
-
-theme_counts <- themes |>
-  count(themes, sort = TRUE) |>
-  #slice_head(n = 75) |> 
-  filter(n >= 2)
 
 theme_counts |>
   slice_head(n = 75) |>
@@ -192,94 +226,118 @@ theme_counts |>
   )
 ```
 
-## Top 20 themes
-
-```{r}
-theme_counts |>
-  slice_head(n = 20) |>
-  ggplot(
-    aes(
-      x = reorder(themes, n),
-      y = n
-    )
-  ) +
-  geom_col() +
-  coord_flip()
-```
 
 
-<!-- # Potentially related requests -->
-
-<!-- Requests that share multiple themes may represent: -->
-
-<!-- * similar problems -->
-<!-- * opportunities for collaboration -->
-<!-- * duplicate requests -->
-<!-- * opportunities to consolidate work -->
-
-<!-- ```{r} -->
-<!-- pairs <- inner_join( -->
-<!--   themes, -->
-<!--   themes, -->
-<!--   by = "themes", -->
-<!--   relationship = "many-to-many" -->
-<!-- ) |> -->
-<!--   filter( -->
-<!--     digital_request_number.x < digital_request_number.y -->
-<!--   ) |> -->
-<!--   group_by( -->
-<!--     digital_request_number.x, -->
-<!--     digital_request_number.y -->
-<!--   ) |> -->
-<!--   summarise( -->
-<!--     shared_themes = paste( -->
-<!--       sort(unique(themes)), -->
-<!--       collapse = "; " -->
-<!--     ), -->
-<!--     n_shared_themes = n(), -->
-<!--     .groups = "drop" -->
-<!--   ) |> -->
-<!--   filter(n_shared_themes >= 2) |> -->
-<!--   arrange( -->
-<!--     desc(n_shared_themes), -->
-<!--     digital_request_number.x, -->
-<!--     digital_request_number.y -->
-<!--   ) -->
-
-<!-- pairs |> -->
-<!--     interactive_table(nrow = 5,  -->
-<!--                                       not_as_factor = c("mrn",  -->
-<!--                                                         "patient" -->
-<!--                                                         ), -->
-<!--                                 )  -->
-<!-- ``` -->
 
 # Request summaries
 
+A concise, board-friendly overview, to answer the question `What requests do we have?`
+
 ```{r}
-flat |>
+flat_metadata |>
   transmute(
-    digital_request_number,
-    business_area,
-    themes = map_chr(
-      themes,
+    `Request` = digital_request_number,
+    `Business area` = business_area,
+    Themes = map_chr(themes, paste, collapse = "; "),
+    Summary = summary
+  ) |>
+  arrange(
+    `Business area`,
+    `Request`
+  ) |>
+  interactive_table(
+    nrow = 5,
+    not_as_factor = c(
+      "Themes",
+      "Summary"
+    )
+  )
+```
+
+## Detailed request metadata
+
+A fuller view for identifying overlaps, dependencies, risks and opportunities to consolidate work, to answer the question `What exactly are they asking for?`
+
+```{r}
+flat_metadata |>
+  transmute(
+    Request = paste0(
+      digital_request_number,
+      " - ",
+      source_record_project_title
+    ),
+    `Business area` = business_area,
+    `Key problem` = key_problem,
+    `Requested outcome` = requested_outcome,
+    `Expected benefits` = map_chr(
+      expected_benefits,
       paste,
       collapse = "; "
     ),
-    summary = str_trunc(
-      summary,
-      width = 1000
-    )
+    Themes = map_chr(themes, paste, collapse = "; "),
+    Stakeholders = map_chr(stakeholders, paste, collapse = "; "),
+    Dependencies = map_chr(dependencies, paste, collapse = "; "),
+    #`Dependencies (n)` = lengths(dependencies),
+    `Risks and constraints` = map_chr(
+      risks_or_constraints,
+      paste,
+      collapse = "; "
+    ),
+    `Complexity score` =
+  lengths(themes) +
+  lengths(stakeholders) +
+  2 * lengths(dependencies) +
+  2 * lengths(risks_or_constraints)
+    #`Risks (n)` = lengths(risks_or_constraints)
   ) |>
   arrange(
-    business_area,
-    digital_request_number
+    #desc(`Dependencies (n)`),
+    #desc(`Risks (n)`),
+    desc(`Complexity score`),
+    `Request`
   ) |>
-  interactive_table(nrow = 5, 
-                                      not_as_factor = c("themes", 
-                                                        "summary"
-                                                        ),
-                                ) 
+  interactive_table(
+    nrow = 5,
+    not_as_factor = c(
+      "Themes",
+      "Key problem",
+      "Requested outcome",
+      "Stakeholders",
+      "Dependencies",
+      "Risks and constraints",
+      "Expected benefits"
+    )
+  )
+```
+
+## Requests with the highest complexity
+
+Compact portfolio-management table, to answer the question `Which requests look biggest or most interconnected?`
+
+```{r}
+flat_metadata |>
+  transmute(
+    Request = paste0(
+      digital_request_number,
+      " - ",
+      source_record_project_title
+    ),
+    `Business area` = business_area,
+    `Themes (n)` = lengths(themes),
+    `Stakeholders (n)` = lengths(stakeholders),
+    `Dependencies (n)` = lengths(dependencies),
+    `Risks (n)` = lengths(risks_or_constraints),
+    `Complexity score` =
+      lengths(themes) +
+      lengths(stakeholders) +
+      2 * lengths(dependencies) +
+      2 * lengths(risks_or_constraints)
+  ) |>
+  arrange(desc(`Complexity score`)) |>
+  interactive_table(
+    nrow = 10,
+    not_as_factor = "Request"
+  )
 ```
 
 # Appendix
@@ -291,6 +349,18 @@ theme_business <- themes |>
   count(
     business_area,
     themes
+  ) |>
+  mutate(
+    business_area = forcats::fct_reorder(
+      business_area,
+      n,
+      .fun = sum
+    ),
+    themes = forcats::fct_reorder(
+      themes,
+      n,
+      .fun = sum
+    )
   )
 
 ggplot(
@@ -308,24 +378,74 @@ ggplot(
       angle = 45,
       hjust = 1
     )
+  ) +
+  labs(
+    x = "Themes",
+    y = "Business area",
+    fill = "Requests (n)"
   )
 ```
 
-<!-- ## Business area frequencies -->
+## Business area frequencies
 
-<!-- ```{r} -->
-<!-- flat |> -->
-<!--   count( -->
-<!--     business_area, -->
-<!--     sort = TRUE -->
-<!--   ) |> -->
-<!--   rename( -->
-<!--     Requests = n -->
-<!--   ) |> -->
-<!--   flextable() |> -->
-<!--   theme_ft() -->
-<!-- ``` -->
+```{r}
+flat_metadata |>
+  count(
+    business_area,
+    sort = TRUE
+  ) |>
+  rename(
+    Requests = n
+  ) |>
+  flextable() |>
+  theme_ft()
+```
 
+## Potentially related requests
+
+Requests that share multiple themes may represent:
+
+* similar problems
+* opportunities for collaboration
+* duplicate requests
+* opportunities to consolidate work
+
+```{r}
+pairs <- inner_join(
+  themes,
+  themes,
+  by = "themes",
+  relationship = "many-to-many"
+) |>
+  filter(
+    digital_request_number.x < digital_request_number.y
+  ) |>
+  group_by(
+    digital_request_number.x,
+    digital_request_number.y
+  ) |>
+  summarise(
+    shared_themes = paste(
+      sort(unique(themes)),
+      collapse = "; "
+    ),
+    n_shared_themes = n(),
+    .groups = "drop"
+  ) |>
+  filter(n_shared_themes >= 2) |>
+  arrange(
+    desc(n_shared_themes),
+    digital_request_number.x,
+    digital_request_number.y
+  )
+
+pairs |>
+    interactive_table(nrow = 5,
+                                      not_as_factor = c("mrn",
+                                                        "patient"
+                                                        ),
+                                )
+```
 
 
 
