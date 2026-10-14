@@ -16,8 +16,8 @@ Field definitions:
 - stakeholders (array of strings): people, teams or services affected.
 - business_area (string): clinical specialty or operational area.
 - expected_benefits (array of strings): benefits expected if delivered.
-- cost_saving_benefit (boolean): true if cost saving is explicitly stated or implied, otherwise false.
-- patient_safety_benefit (boolean): true if patient safety benefit is explicitly stated or implied, otherwise false.
+- cost_saving_benefit (boolean): set to true only where the request explicitly states or strongly implies financial savings, reduced expenditure, avoidance of future costs, reduced staffing requirement, reduced administrative burden resulting in efficiency savings, or increased productivity with an anticipated resource saving. Otherwise false. Always return true or false, never null.
+- patient_safety_benefit (boolean): set to true only where the request explicitly states or strongly implies reduction in patient harm, reduction in clinical risk, prevention of errors, improved safety monitoring, improved medication safety, improved diagnostic safety, or mitigation of an identified patient safety concern. Otherwise false. Always return true or false, never null.
 - dependencies (array of strings): e.g. supplier involvement, funding, procurement, data migration, information governance.
 - risks_or_constraints (array of strings): risks or limiting factors described.
 - themes (array of 1-4 strings): thematic labels from the controlled vocabulary, following the theme assignment rules above.

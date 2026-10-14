@@ -31,6 +31,8 @@ metadata_type <- ellmer::type_object(
   stakeholders = str_list("people, teams or services affected"),
   business_area = ellmer::type_string(),
   expected_benefits = str_list(NULL),
+  cost_saving_benefit = ellmer::type_boolean("true only if cost savings are explicitly stated or strongly implied"),
+  patient_safety_benefit = ellmer::type_boolean("true only if patient safety benefits are explicitly stated or strongly implied"),
   dependencies = str_list(NULL),
   risks_or_constraints = str_list(NULL),
   themes = str_list("1-4 themes selected exactly from the controlled vocabulary")
