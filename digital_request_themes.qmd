@@ -74,7 +74,34 @@ flat_metadata <- res |>
     source_record,
     names_sep = "_"
   ) |>
-  unnest_wider(metadata_v3)
+  unnest_wider(metadata_v3) |>
+  mutate(
+    cost_saving_benefit = coalesce(as.logical(cost_saving_benefit), FALSE),
+    patient_safety_benefit = coalesce(as.logical(patient_safety_benefit), FALSE)
+  )
+
+n_requests <- nrow(flat_metadata)
+n_cost <- sum(flat_metadata$cost_saving_benefit)
+n_safety <- sum(flat_metadata$patient_safety_benefit)
+n_both <- sum(flat_metadata$cost_saving_benefit & flat_metadata$patient_safety_benefit)
+pct <- function(x) scales::percent(x / n_requests, accuracy = 0.1)
+
+benefit_table <- function(data) {
+  data |>
+    transmute(
+      `Digital request number` = digital_request_number,
+      Request = source_record_project_title,
+      `Business area` = business_area,
+      `Cost saving benefit` = cost_saving_benefit,
+      `Patient safety benefit` = patient_safety_benefit,
+      `Expected benefits` = map_chr(expected_benefits, paste, collapse = "; ")
+    ) |>
+    arrange(`Digital request number`) |>
+    interactive_table(
+      nrow = 5,
+      not_as_factor = c("Request", "Expected benefits")
+    )
+}
 
 # Flextable ---------------
 
@@ -137,6 +164,10 @@ interactive_table <- function(table,
 `r n_distinct(flat_metadata$business_area)` business areas.
 
 The most common theme was **`r top_theme`**.
+
+* Requests with cost-saving benefits: **`r n_cost`** (`r pct(n_cost)`)
+* Requests with patient safety benefits: **`r n_safety`** (`r pct(n_safety)`)
+* Requests with both cost-saving and patient safety benefits: **`r n_both`** (`r pct(n_both)`)
 
 The sections below summarise request themes, business areas, complexity indicators and opportunities to identify related requests.
 
@@ -274,6 +305,8 @@ flat_metadata |>
       paste,
       collapse = "; "
     ),
+    `Cost saving benefit` = cost_saving_benefit,
+    `Patient safety benefit` = patient_safety_benefit,
     Themes = map_chr(themes, paste, collapse = "; "),
     Stakeholders = map_chr(stakeholders, paste, collapse = "; "),
     Dependencies = map_chr(dependencies, paste, collapse = "; "),
@@ -308,6 +341,33 @@ flat_metadata |>
       "Expected benefits"
     )
   )
+```
+
+## Requests with cost-saving benefits
+
+```{r}
+flat_metadata |>
+  filter(cost_saving_benefit) |>
+  benefit_table()
+```
+
+## Requests with patient safety benefits
+
+```{r}
+flat_metadata |>
+  filter(patient_safety_benefit) |>
+  benefit_table()
+```
+
+## Requests with both patient safety and cost-saving benefits
+
+```{r}
+flat_metadata |>
+  filter(
+    cost_saving_benefit,
+    patient_safety_benefit
+  ) |>
+  benefit_table()
 ```
 
 ## Requests with the highest complexity
