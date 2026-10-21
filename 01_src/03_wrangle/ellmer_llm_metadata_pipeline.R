@@ -35,7 +35,28 @@ metadata_type <- ellmer::type_object(
   patient_safety_benefit = ellmer::type_boolean("true only if patient safety benefits are explicitly stated or strongly implied"),
   dependencies = str_list(NULL),
   risks_or_constraints = str_list(NULL),
-  themes = str_list("1-4 themes selected exactly from the controlled vocabulary")
+  themes = ellmer::type_array(
+    ellmer::type_enum(
+      c(
+        "AI & Automation",
+        "Clinical Systems",
+        "Communications & Referrals",
+        "Data, Reporting & Analytics",
+        "Infrastructure",
+        "Integration & Interoperability",
+        "Laboratory Systems",
+        "Patient Pathways",
+        "Pharmacy & Medicines",
+        "Radiology & Imaging",
+        "System Change",
+        "Workflow Improvement",
+        "General Operational Request"
+      ),
+      description = "Theme selected from the controlled vocabulary"
+    ),
+    description = "1-4 themes selected from the controlled vocabulary"
+  )
+  
 )
 system_prompt <- paste(
   readLines(here::here("01_src", "03_wrangle", "Prompts", "prompt-digital-request-analysis.md")),
