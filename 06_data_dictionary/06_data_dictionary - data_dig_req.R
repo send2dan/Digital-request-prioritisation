@@ -499,11 +499,11 @@ info_columns(
     info = "Free-text response to the form field: 'Provide Clinical Risk / Datix Ref (if any)'. Reference number(s) of any related clinical risk or Datix record linked to this request."
   ) |>
   
-  info_columns(
-    columns = vars(constraints),
-    Items = "Free-text field.",
-    info = "Free-text response to the question: 'What things must you take into consideration that will influence your deliverables & schedule? These are external variables that you cannot control but need to manage.'. Captures external constraints that influence deliverables and schedule."
-  ) |>
+  # info_columns(
+  #   columns = vars(constraints),
+  #   Items = "Free-text field.",
+  #   info = "Free-text response to the question: 'What things must you take into consideration that will influence your deliverables & schedule? These are external variables that you cannot control but need to manage.'. Captures external constraints that influence deliverables and schedule."
+  # ) |>
   
   info_columns(
     columns = vars(contact_type),
