@@ -1,5 +1,6 @@
 ---
 title: "Digital request themes (LLM metadata, version 3)"
+date: "`r Sys.Date()`"
 format:
   html:
     toc: true
